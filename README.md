@@ -4,7 +4,7 @@
 
 ## 🚀 在线访问
 
-- **H5 版本**: https://indredk.github.io/vue-app/
+- **H5 版本**: https://kindred-vue.github.io/vue-app/
 - **后端 API**: https://vue-app-backend-1olu.onrender.com
 
 ## 📱 功能特性
