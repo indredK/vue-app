@@ -1,4 +1,4 @@
-const BASE_URL = 'http://localhost:3001/api'
+import { BASE_URL } from '../config/api'
 
 const getToken = () => {
   return uni.getStorageSync('token') || ''
