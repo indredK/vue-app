@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref, onMounted, onShow } from 'vue'
-import { onPullDownRefresh } from '@dcloudio/uni-app'
-import { favoriteApi } from '@/utils/api'
+import { ref, onMounted } from 'vue'
+import { onPullDownRefresh, onShow } from '@dcloudio/uni-app'
+import { favoriteApi, cartApi } from '@/utils/api'
 import type { Favorite } from '@/types'
 
 declare const uni: any
@@ -63,8 +63,18 @@ const removeFavorite = (favorite: Favorite) => {
   })
 }
 
-const addToCart = (favorite: Favorite) => {
-  uni.showToast({ title: '已加入购物车', icon: 'success' })
+const addToCart = async (favorite: Favorite) => {
+  try {
+    await cartApi.add({
+      userId: currentUserId.value,
+      goodsId: favorite.goodsId,
+      quantity: 1
+    })
+    uni.showToast({ title: '已加入购物车', icon: 'success' })
+  } catch (error) {
+    console.error('Failed to add to cart:', error)
+    uni.showToast({ title: '加入购物车失败', icon: 'none' })
+  }
 }
 </script>
 

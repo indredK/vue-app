@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, onMounted, onShow } from 'vue'
-import { onPullDownRefresh } from '@dcloudio/uni-app'
+import { ref, onMounted } from 'vue'
+import { onPullDownRefresh, onShow } from '@dcloudio/uni-app'
 import { addressApi } from '@/utils/api'
 import type { Address } from '@/types'
 

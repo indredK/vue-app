@@ -1,13 +1,16 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { userApi } from '@/utils/api'
+import { userApi, orderApi } from '@/utils/api'
+
+declare const uni: any
 
 const localSettingsList = ref([
-  { id: 1, icon: '👤', title: '个人信息', path: '/pages/settings/profile', switch: false },
-  { id: 2, icon: '🔔', title: '消息通知', path: '', switch: true, switchValue: true },
-  { id: 3, icon: '🔒', title: '隐私设置', path: '/pages/settings/privacy', switch: false },
-  { id: 4, icon: '🌙', title: '深色模式', path: '', switch: true, switchValue: false },
-  { id: 5, icon: '🗣', title: '语言', value: '简体中文', path: '/pages/settings/language', switch: false },
+  { id: 1, icon: '❤️', title: '我的收藏', path: '/pages/favorite/index', switch: false },
+  { id: 2, icon: '👤', title: '个人信息', path: '/pages/settings/profile', switch: false },
+  { id: 3, icon: '🔔', title: '消息通知', path: '', switch: true, switchValue: true },
+  { id: 4, icon: '🔒', title: '隐私设置', path: '/pages/settings/privacy', switch: false },
+  { id: 5, icon: '🌙', title: '深色模式', path: '', switch: true, switchValue: false },
+  { id: 6, icon: '🗣', title: '语言', value: '简体中文', path: '/pages/settings/language', switch: false },
 ])
 const localAboutList = ref([
   { id: 1, icon: '📖', title: '使用帮助', path: '' },
@@ -24,14 +27,54 @@ const userInfo = ref({
   email: ''
 })
 
+const orderStats = ref({
+  pending: 0,
+  paid: 0,
+  shipped: 0,
+  completed: 0,
+  refund: 0
+})
+
 onMounted(async () => {
   try {
-    const data: any = await userApi.getInfo(1)
-    userInfo.value = data
+    const user = uni.getStorageSync('user')
+    if (user) {
+      userInfo.value = user
+      await loadOrderStats(user.id)
+    } else {
+      const data: any = await userApi.getInfo(1)
+      userInfo.value = data
+      await loadOrderStats(1)
+    }
+    
+    const notificationEnabled = uni.getStorageSync('notificationEnabled')
+    if (notificationEnabled !== undefined) {
+      localSettingsList.value[1].switchValue = notificationEnabled
+    }
+    
+    const darkModeEnabled = uni.getStorageSync('darkModeEnabled')
+    if (darkModeEnabled !== undefined) {
+      localSettingsList.value[3].switchValue = darkModeEnabled
+    }
   } catch (error) {
     console.error('Failed to load user info:', error)
   }
 })
+
+const loadOrderStats = async (userId: number) => {
+  try {
+    const orders: any[] = await orderApi.getList(userId)
+    orderStats.value = {
+      pending: orders.filter(o => o.status === 'pending').length,
+      paid: orders.filter(o => o.status === 'paid').length,
+      shipped: orders.filter(o => o.status === 'shipped').length,
+      completed: orders.filter(o => o.status === 'completed').length,
+      refund: orders.filter(o => o.status === 'cancelled').length
+    }
+  } catch (error) {
+    console.error('Failed to load order stats:', error)
+  }
+}
 
 const goToEdit = () => {
   uni.navigateTo({
@@ -39,12 +82,40 @@ const goToEdit = () => {
   })
 }
 
+const goToOrderList = (status: string) => {
+  uni.navigateTo({
+    url: `/pages/order/list?status=${status}`
+  })
+}
+
 const onSwitchChange = (item: any) => {
   item.switchValue = !item.switchValue
+  
+  if (item.title === '消息通知') {
+    uni.setStorageSync('notificationEnabled', item.switchValue)
+  } else if (item.title === '深色模式') {
+    uni.setStorageSync('darkModeEnabled', item.switchValue)
+    applyDarkMode(item.switchValue)
+  }
+  
   uni.showToast({
     title: item.switchValue ? '已开启' : '已关闭',
     icon: 'none'
   })
+}
+
+const applyDarkMode = (enabled: boolean) => {
+  if (enabled) {
+    uni.setNavigationBarColor({
+      frontColor: '#ffffff',
+      backgroundColor: '#1a1a1a'
+    })
+  } else {
+    uni.setNavigationBarColor({
+      frontColor: '#000000',
+      backgroundColor: '#ffffff'
+    })
+  }
 }
 
 const handleClick = (item: any) => {
@@ -52,6 +123,11 @@ const handleClick = (item: any) => {
   if (item.path) {
     uni.navigateTo({
       url: item.path
+    })
+  } else {
+    uni.showToast({
+      title: '功能开发中',
+      icon: 'none'
     })
   }
 }
@@ -99,28 +175,28 @@ const logout = () => {
     </view>
     
     <view class="stats-bar">
-      <view class="stat-item">
-        <text class="stat-num">12</text>
+      <view class="stat-item" @click="goToOrderList('pending')">
+        <text class="stat-num">{{ orderStats.pending }}</text>
         <text class="stat-label">待付款</text>
       </view>
       <view class="stat-divider"></view>
-      <view class="stat-item">
-        <text class="stat-num">3</text>
+      <view class="stat-item" @click="goToOrderList('paid')">
+        <text class="stat-num">{{ orderStats.paid }}</text>
         <text class="stat-label">待发货</text>
       </view>
       <view class="stat-divider"></view>
-      <view class="stat-item">
-        <text class="stat-num">5</text>
+      <view class="stat-item" @click="goToOrderList('shipped')">
+        <text class="stat-num">{{ orderStats.shipped }}</text>
         <text class="stat-label">待收货</text>
       </view>
       <view class="stat-divider"></view>
-      <view class="stat-item">
-        <text class="stat-num">8</text>
+      <view class="stat-item" @click="goToOrderList('completed')">
+        <text class="stat-num">{{ orderStats.completed }}</text>
         <text class="stat-label">评价</text>
       </view>
       <view class="stat-divider"></view>
-      <view class="stat-item">
-        <text class="stat-num">2</text>
+      <view class="stat-item" @click="goToOrderList('cancelled')">
+        <text class="stat-num">{{ orderStats.refund }}</text>
         <text class="stat-label">退款</text>
       </view>
     </view>
