@@ -9,7 +9,7 @@ const compareList = ref<Goods[]>([
   goodsList[4],
 ])
 
-const isSelecting = ref(false)
+const showSelector = ref(false)
 
 const paramLabels = [
   { key: 'name', label: '商品名称', isImage: false },
@@ -120,35 +120,8 @@ const getValueLevel = (score: number) => {
       <text class="back-btn" @click="goBack">‹</text>
       <view class="header-center">
         <text class="title">产品对比</text>
-        <text class="subtitle">对比 {{ compareList.length }} 个商品</text>
+        <text class="subtitle">{{ compareList.length }} 个商品</text>
       </view>
-      <text class="select-btn" @click="isSelecting = !isSelecting">
-        {{ isSelecting ? '完成' : '选择商品' }}
-      </text>
-    </view>
-    
-    <view v-if="isSelecting" class="selector-panel">
-      <view class="selector-title">从商品库选择添加对比</view>
-      <scroll-view scroll-x class="goods-selector">
-        <view class="selector-scroll">
-          <view 
-            v-for="goods in goodsList" 
-            :key="goods.id" 
-            class="selector-item"
-            :class="{ selected: isSelected(goods.id) }"
-            @click="toggleGoods(goods)"
-          >
-            <image :src="goods.image" class="selector-img" mode="aspectFill" />
-            <view class="selector-info">
-              <text class="selector-name">{{ goods.name }}</text>
-              <text class="selector-price">¥{{ goods.price }}</text>
-            </view>
-            <view class="selector-check">
-              <text v-if="isSelected(goods.id)">✓</text>
-            </view>
-          </view>
-        </view>
-      </scroll-view>
     </view>
     
     <view v-if="compareList.length === 0" class="empty-state">
@@ -158,10 +131,16 @@ const getValueLevel = (score: number) => {
       </view>
       <text class="empty-title">暂无对比商品</text>
       <text class="empty-desc">请选择商品进行对比分析</text>
-      <button class="select-goods-btn" @click="isSelecting = true">选择商品</button>
+      <view class="empty-actions">
+        <view class="select-goods-btn" @click="showSelector = true">选择商品</view>
+      </view>
     </view>
     
     <view v-else class="compare-content">
+      <view class="selector-bar" @click="showSelector = true">
+        <text class="selector-text">+ 添加商品对比 ({{ compareList.length }}/4)</text>
+      </view>
+      
       <view class="analysis-card">
         <view class="analysis-header">
           <text class="analysis-icon">📊</text>
@@ -262,6 +241,33 @@ const getValueLevel = (score: number) => {
         </view>
       </view>
     </view>
+    
+    <view v-if="showSelector" class="selector-modal" @click="showSelector = false">
+      <view class="selector-panel" @click.stop>
+        <view class="panel-header">
+          <text class="panel-title">选择商品</text>
+          <text class="panel-close" @click="showSelector = false">✕</text>
+        </view>
+        <scroll-view scroll-y class="goods-list">
+          <view 
+            v-for="goods in goodsList" 
+            :key="goods.id" 
+            class="goods-item"
+            :class="{ selected: isSelected(goods.id) }"
+            @click="toggleGoods(goods)"
+          >
+            <image :src="goods.image" class="item-img" mode="aspectFill" />
+            <view class="item-info">
+              <text class="item-name">{{ goods.name }}</text>
+              <text class="item-price">¥{{ goods.price }}</text>
+            </view>
+            <view class="item-check">
+              <text v-if="isSelected(goods.id)">✓</text>
+            </view>
+          </view>
+        </scroll-view>
+      </view>
+    </view>
   </view>
 </template>
 
@@ -299,97 +305,6 @@ const getValueLevel = (score: number) => {
       font-size: 24rpx;
       color: rgba(255, 255, 255, 0.8);
       margin-top: 4rpx;
-    }
-  }
-  
-  .select-btn {
-    color: #fff;
-    font-size: 28rpx;
-    background: rgba(255, 255, 255, 0.2);
-    padding: 12rpx 24rpx;
-    border-radius: 30rpx;
-  }
-}
-
-.selector-panel {
-  background: #fff;
-  padding: 24rpx;
-  margin-bottom: 20rpx;
-  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.04);
-  
-  .selector-title {
-    font-size: 26rpx;
-    color: #868e96;
-    margin-bottom: 20rpx;
-  }
-  
-  .goods-selector {
-    width: 100%;
-    white-space: nowrap;
-  }
-  
-  .selector-scroll {
-    display: flex;
-    gap: 20rpx;
-  }
-  
-  .selector-item {
-    display: inline-block;
-    width: 200rpx;
-    background: #f8f9fa;
-    border-radius: 16rpx;
-    padding: 16rpx;
-    position: relative;
-    border: 3rpx solid transparent;
-    transition: all 0.3s;
-    
-    &.selected {
-      border-color: #ee0979;
-      background: #fff5f8;
-    }
-    
-    .selector-img {
-      width: 168rpx;
-      height: 168rpx;
-      border-radius: 12rpx;
-    }
-    
-    .selector-info {
-      margin-top: 12rpx;
-      
-      .selector-name {
-        display: block;
-        font-size: 24rpx;
-        font-weight: 500;
-        color: #212529;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
-      
-      .selector-price {
-        display: block;
-        font-size: 26rpx;
-        font-weight: bold;
-        color: #ff4757;
-        margin-top: 6rpx;
-      }
-    }
-    
-    .selector-check {
-      position: absolute;
-      top: 12rpx;
-      right: 12rpx;
-      width: 40rpx;
-      height: 40rpx;
-      background: #ee0979;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #fff;
-      font-size: 24rpx;
-      font-weight: bold;
     }
   }
 }
@@ -432,22 +347,41 @@ const getValueLevel = (score: number) => {
     margin-top: 12rpx;
   }
   
-  .select-goods-btn {
+  .empty-actions {
     margin-top: 48rpx;
-    width: 280rpx;
-    height: 80rpx;
-    line-height: 80rpx;
-    background: linear-gradient(135deg, #ee0979 0%, #ff6a00 100%);
-    color: #fff;
-    font-size: 30rpx;
-    font-weight: 500;
-    border-radius: 40rpx;
-    box-shadow: 0 8rpx 24rpx rgba(238, 9, 121, 0.3);
+    
+    .select-goods-btn {
+      width: 280rpx;
+      height: 80rpx;
+      line-height: 80rpx;
+      background: linear-gradient(135deg, #ee0979 0%, #ff6a00 100%);
+      color: #fff;
+      font-size: 30rpx;
+      font-weight: 500;
+      border-radius: 40rpx;
+      text-align: center;
+      box-shadow: 0 8rpx 24rpx rgba(238, 9, 121, 0.3);
+    }
   }
 }
 
 .compare-content {
   padding: 24rpx;
+}
+
+.selector-bar {
+  background: #fff;
+  border-radius: 16rpx;
+  padding: 24rpx;
+  margin-bottom: 24rpx;
+  text-align: center;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.04);
+  
+  .selector-text {
+    color: #ee0979;
+    font-size: 28rpx;
+    font-weight: 500;
+  }
 }
 
 .analysis-card {
@@ -557,14 +491,14 @@ const getValueLevel = (score: number) => {
     text-align: center;
     
     .col-img {
-      width: 120rpx;
-      height: 120rpx;
+      width: 100rpx;
+      height: 100rpx;
       border-radius: 12rpx;
     }
     
     .col-name {
       display: block;
-      font-size: 24rpx;
+      font-size: 22rpx;
       font-weight: 600;
       color: #212529;
       margin-top: 10rpx;
@@ -582,14 +516,14 @@ const getValueLevel = (score: number) => {
       margin-top: 8rpx;
       
       .score-val {
-        font-size: 28rpx;
+        font-size: 26rpx;
         font-weight: bold;
         color: #667eea;
       }
       
       .score-level {
-        font-size: 22rpx;
-        padding: 4rpx 10rpx;
+        font-size: 20rpx;
+        padding: 4rpx 8rpx;
         border-radius: 8rpx;
         font-weight: 600;
         
@@ -665,8 +599,8 @@ const getValueLevel = (score: number) => {
     }
     
     .value-img {
-      width: 80rpx;
-      height: 80rpx;
+      width: 70rpx;
+      height: 70rpx;
       border-radius: 8rpx;
     }
   }
@@ -689,7 +623,7 @@ const getValueLevel = (score: number) => {
       align-items: baseline;
       
       .score-num {
-        font-size: 44rpx;
+        font-size: 40rpx;
         font-weight: 800;
         color: #667eea;
       }
@@ -713,13 +647,109 @@ const getValueLevel = (score: number) => {
     
     .cart-btn {
       width: 100%;
-      height: 60rpx;
-      line-height: 60rpx;
+      height: 56rpx;
+      line-height: 56rpx;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: #fff;
-      font-size: 24rpx;
+      font-size: 22rpx;
       font-weight: 500;
-      border-radius: 30rpx;
+      border-radius: 28rpx;
+    }
+  }
+}
+
+.selector-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: flex-end;
+  z-index: 1000;
+  
+  .selector-panel {
+    width: 100%;
+    max-height: 80vh;
+    background: #fff;
+    border-radius: 32rpx 32rpx 0 0;
+    
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 32rpx;
+      border-bottom: 1rpx solid #f0f0f0;
+      
+      .panel-title {
+        font-size: 32rpx;
+        font-weight: 600;
+      }
+      
+      .panel-close {
+        font-size: 36rpx;
+        color: #999;
+        padding: 10rpx;
+      }
+    }
+    
+    .goods-list {
+      max-height: 60vh;
+      padding: 24rpx;
+      
+      .goods-item {
+        display: flex;
+        align-items: center;
+        padding: 20rpx;
+        border-radius: 16rpx;
+        margin-bottom: 16rpx;
+        background: #f8f9fa;
+        
+        &.selected {
+          background: #fff5f8;
+          border: 2rpx solid #ee0979;
+        }
+        
+        .item-img {
+          width: 120rpx;
+          height: 120rpx;
+          border-radius: 12rpx;
+        }
+        
+        .item-info {
+          flex: 1;
+          margin-left: 20rpx;
+          
+          .item-name {
+            display: block;
+            font-size: 28rpx;
+            font-weight: 500;
+            color: #212529;
+          }
+          
+          .item-price {
+            display: block;
+            font-size: 32rpx;
+            font-weight: bold;
+            color: #ff4757;
+            margin-top: 8rpx;
+          }
+        }
+        
+        .item-check {
+          width: 48rpx;
+          height: 48rpx;
+          border-radius: 50%;
+          border: 2rpx solid #dee2e6;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 28rpx;
+          color: #ee0979;
+          font-weight: bold;
+        }
+      }
     }
   }
 }
