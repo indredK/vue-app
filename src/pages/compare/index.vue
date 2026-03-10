@@ -1,13 +1,29 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { goodsList, type Goods } from '@/mock'
+import { ref, computed, onMounted } from 'vue'
+import { goodsApi, cartApi } from '@/utils/api'
+import type { Goods } from '@/types'
 
-const compareList = ref<Goods[]>([
-  goodsList[0],
-  goodsList[1],
-  goodsList[3],
-  goodsList[4],
-])
+declare const uni: any
+
+const goodsList = ref<Goods[]>([])
+const compareList = ref<Goods[]>([])
+const loading = ref(true)
+
+onMounted(async () => {
+  try {
+    const data: any = await goodsApi.getList()
+    goodsList.value = data.map((item: any) => ({
+      ...item,
+      specs: typeof item.specs === 'string' ? JSON.parse(item.specs) : item.specs,
+      tags: typeof item.tags === 'string' ? JSON.parse(item.tags) : item.tags
+    }))
+    compareList.value = [goodsList.value[0], goodsList.value[1], goodsList.value[3], goodsList.value[4]]
+  } catch (error) {
+    console.error('Failed to load goods:', error)
+  } finally {
+    loading.value = false
+  }
+})
 
 const showSelector = ref(false)
 
@@ -24,14 +40,14 @@ const paramLabels = [
 ]
 
 const getPriceScore = (price: number) => {
-  const prices = goodsList.map(g => g.price)
+  const prices = goodsList.value.map((g: Goods) => g.price)
   const minPrice = Math.min(...prices)
   const maxPrice = Math.max(...prices)
   return Math.round(((maxPrice - price) / (maxPrice - minPrice)) * 100)
 }
 
 const getSalesScore = (sales: number) => {
-  const salesList = goodsList.map(g => g.sales)
+  const salesList = goodsList.value.map((g: Goods) => g.sales)
   const minSales = Math.min(...salesList)
   const maxSales = Math.max(...salesList)
   return Math.round(((sales - minSales) / (maxSales - minSales)) * 100)

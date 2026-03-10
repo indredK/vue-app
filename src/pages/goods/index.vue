@@ -1,12 +1,31 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { goodsList, type Goods } from '@/mock'
+import { ref, onMounted } from 'vue'
+import { goodsApi, cartApi } from '@/utils/api'
+import type { Goods } from '@/types'
 
 declare const uni: any
 
+const goodsList = ref<Goods[]>([])
 const cartCount = ref(0)
 const compareList = ref<Goods[]>([])
 const showCompare = ref(false)
+const loading = ref(true)
+
+onMounted(async () => {
+  try {
+    const data: any = await goodsApi.getList()
+    goodsList.value = data.map((item: any) => ({
+      ...item,
+      specs: typeof item.specs === 'string' ? JSON.parse(item.specs) : item.specs,
+      tags: typeof item.tags === 'string' ? JSON.parse(item.tags) : item.tags
+    }))
+  } catch (error) {
+    console.error('Failed to load goods:', error)
+    uni.showToast({ title: '加载失败', icon: 'none' })
+  } finally {
+    loading.value = false
+  }
+})
 
 const goToCompare = () => {
   if (compareList.value.length < 2) {
@@ -30,12 +49,24 @@ const goToDetail = (goods: Goods) => {
   })
 }
 
-const addToCart = (goods: Goods) => {
-  cartCount.value++
-  uni.showToast({
-    title: '已加入购物车',
-    icon: 'success'
-  })
+const addToCart = async (goods: Goods) => {
+  try {
+    await cartApi.add({
+      userId: 1,
+      goodsId: goods.id,
+      name: goods.name,
+      price: goods.price,
+      image: goods.image,
+      quantity: 1
+    })
+    cartCount.value++
+    uni.showToast({
+      title: '已加入购物车',
+      icon: 'success'
+    })
+  } catch (error) {
+    uni.showToast({ title: '添加失败', icon: 'none' })
+  }
 }
 
 const handleAddAllToCart = () => {
@@ -69,14 +100,18 @@ const isInCompare = (goods: Goods) => {
 }
 
 const getPriceScore = (price: number) => {
-  const minPrice = Math.min(...goodsList.map(g => g.price))
-  const maxPrice = Math.max(...goodsList.map(g => g.price))
+  const list = goodsList.value
+  if (list.length === 0) return '0'
+  const minPrice = Math.min(...list.map((g: Goods) => g.price))
+  const maxPrice = Math.max(...list.map((g: Goods) => g.price))
   return ((maxPrice - price) / (maxPrice - minPrice) * 100).toFixed(0)
 }
 
 const getSalesScore = (sales: number) => {
-  const minSales = Math.min(...goodsList.map(g => g.sales))
-  const maxSales = Math.max(...goodsList.map(g => g.sales))
+  const list = goodsList.value
+  if (list.length === 0) return '0'
+  const minSales = Math.min(...list.map((g: Goods) => g.sales))
+  const maxSales = Math.max(...list.map((g: Goods) => g.sales))
   return ((sales - minSales) / (maxSales - minSales) * 100).toFixed(0)
 }
 

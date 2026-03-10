@@ -1,12 +1,32 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { getCartItems, type CartItem } from '@/mock'
+import { ref, computed, onMounted } from 'vue'
+import { cartApi, orderApi } from '@/utils/api'
+import type { CartItem } from '@/types'
 
 declare const uni: any
 
-const cartData = ref<CartItem[]>(getCartItems())
+const cartData = ref<CartItem[]>([])
+const loading = ref(true)
+const currentUserId = 1
 
-const selectAll = ref(cartData.value.length > 0 && cartData.value.every(item => item.selected))
+onMounted(async () => {
+  try {
+    const data: any = await cartApi.getList(currentUserId)
+    cartData.value = data.map((item: any) => ({
+      ...item,
+      selected: item.selected ?? true
+    }))
+  } catch (error) {
+    console.error('Failed to load cart:', error)
+    uni.showToast({ title: '加载失败', icon: 'none' })
+  } finally {
+    loading.value = false
+  }
+})
+
+const selectAll = computed(() => {
+  return cartData.value.length > 0 && cartData.value.every(item => item.selected)
+})
 
 const totalPrice = computed(() => {
   return cartData.value
@@ -18,25 +38,47 @@ const selectedCount = computed(() => {
   return cartData.value.filter(item => item.selected).length
 })
 
-const toggleSelect = (item: CartItem) => {
+const toggleSelect = async (item: CartItem) => {
   item.selected = !item.selected
-  selectAll.value = cartData.value.length > 0 && cartData.value.every(item => item.selected)
+  try {
+    await cartApi.update(item.id, { selected: item.selected })
+  } catch (error) {
+    item.selected = !item.selected
+    uni.showToast({ title: '更新失败', icon: 'none' })
+  }
 }
 
-const toggleSelectAll = () => {
-  selectAll.value = !selectAll.value
-  cartData.value.forEach(item => {
-    item.selected = selectAll.value
-  })
+const toggleSelectAll = async () => {
+  const newValue = !selectAll.value
+  try {
+    for (const item of cartData.value) {
+      await cartApi.update(item.id, { selected: newValue })
+      item.selected = newValue
+    }
+  } catch (error) {
+    uni.showToast({ title: '更新失败', icon: 'none' })
+  }
 }
 
-const increase = (item: CartItem) => {
-  item.quantity++
+const increase = async (item: CartItem) => {
+  const newQuantity = item.quantity + 1
+  try {
+    await cartApi.update(item.id, { quantity: newQuantity })
+    item.quantity = newQuantity
+  } catch (error) {
+    uni.showToast({ title: '更新失败', icon: 'none' })
+  }
 }
 
-const decrease = (item: CartItem) => {
+const decrease = async (item: CartItem) => {
   if (item.quantity > 1) {
-    item.quantity--
+    const newQuantity = item.quantity - 1
+    try {
+      await cartApi.update(item.id, { quantity: newQuantity })
+      item.quantity = newQuantity
+    } catch (error) {
+      uni.showToast({ title: '更新失败', icon: 'none' })
+    }
   }
 }
 
@@ -44,35 +86,65 @@ const removeItem = (id: number) => {
   uni.showModal({
     title: '提示',
     content: '确定要删除该商品吗？',
-    success: (res: any) => {
+    success: async (res: any) => {
       if (res.confirm) {
-        const index = cartData.value.findIndex(item => item.id === id)
-        if (index > -1) {
-          cartData.value.splice(index, 1)
-          uni.showToast({ title: '已删除', icon: 'success' })
+        try {
+          await cartApi.remove(id)
+          const index = cartData.value.findIndex(item => item.id === id)
+          if (index > -1) {
+            cartData.value.splice(index, 1)
+            uni.showToast({ title: '已删除', icon: 'success' })
+          }
+        } catch (error) {
+          uni.showToast({ title: '删除失败', icon: 'none' })
         }
       }
     }
   })
 }
 
-const goToCheckout = () => {
+const goToCheckout = async () => {
   const selectedItems = cartData.value.filter(item => item.selected)
   if (selectedItems.length === 0) {
     uni.showToast({ title: '请选择商品', icon: 'none' })
     return
   }
-  uni.showToast({ title: '去结算', icon: 'success' })
+  try {
+    await orderApi.create({
+      userId: currentUserId,
+      items: selectedItems.map((item: CartItem) => ({
+        goodsId: item.goodsId,
+        name: item.name,
+        price: item.price,
+        image: item.image,
+        quantity: item.quantity
+      })),
+      totalAmount: totalPrice.value
+    })
+    uni.showToast({ title: '购买成功', icon: 'success' })
+    const data: any = await cartApi.getList(currentUserId)
+    cartData.value = data.map((item: any) => ({
+      ...item,
+      selected: item.selected ?? true
+    }))
+  } catch (error) {
+    uni.showToast({ title: '购买失败', icon: 'none' })
+  }
 }
 
 const clearCart = () => {
   uni.showModal({
     title: '提示',
     content: '确定要清空购物车吗？',
-    success: (res: any) => {
+    success: async (res: any) => {
       if (res.confirm) {
-        cartData.value = []
-        uni.showToast({ title: '已清空', icon: 'success' })
+        try {
+          await cartApi.clear(currentUserId)
+          cartData.value = []
+          uni.showToast({ title: '已清空', icon: 'success' })
+        } catch (error) {
+          uni.showToast({ title: '清空失败', icon: 'none' })
+        }
       }
     }
   })

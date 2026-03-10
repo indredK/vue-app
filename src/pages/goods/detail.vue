@@ -1,18 +1,29 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
-import { getGoodsById, type Goods } from '@/mock'
+import { goodsApi, cartApi } from '@/utils/api'
+import type { Goods } from '@/types'
 
 const goods = ref<Goods | null>(null)
 const currentImage = ref('')
 const quantity = ref(1)
+const currentUserId = 1
 
-onLoad((options: { id?: string }) => {
+onLoad(async (options: { id?: string }) => {
   if (options.id) {
-    const data = getGoodsById(Number(options.id))
-    if (data) {
-      goods.value = data
-      currentImage.value = data.image
+    try {
+      const data: any = await goodsApi.getById(Number(options.id))
+      goods.value = {
+        ...data,
+        specs: typeof data.specs === 'string' ? JSON.parse(data.specs) : data.specs,
+        tags: typeof data.tags === 'string' ? JSON.parse(data.tags) : data.tags
+      }
+      if (goods.value) {
+        currentImage.value = goods.value.image
+      }
+    } catch (error) {
+      console.error('Failed to load goods:', error)
+      uni.showToast({ title: '加载失败', icon: 'none' })
     }
   }
 })
@@ -27,17 +38,29 @@ const increase = () => {
   quantity.value++
 }
 
-const addToCart = () => {
-  uni.showToast({
-    title: '已加入购物车',
-    icon: 'success'
-  })
+const addToCart = async () => {
+  if (!goods.value) return
+  try {
+    await cartApi.add({
+      userId: currentUserId,
+      goodsId: goods.value.id,
+      name: goods.value.name,
+      price: goods.value.price,
+      image: goods.value.image,
+      quantity: quantity.value
+    })
+    uni.showToast({
+      title: '已加入购物车',
+      icon: 'success'
+    })
+  } catch (error) {
+    uni.showToast({ title: '添加失败', icon: 'none' })
+  }
 }
 
 const buyNow = () => {
-  uni.showToast({
-    title: '立即购买',
-    icon: 'success'
+  uni.switchTab({
+    url: '/pages/cart/index'
   })
 }
 

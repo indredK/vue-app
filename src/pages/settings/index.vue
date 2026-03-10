@@ -1,9 +1,37 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { userInfo, settingsList, aboutList } from '@/mock'
+import { ref, onMounted } from 'vue'
+import { userApi } from '@/utils/api'
 
-const localSettingsList = ref([...settingsList])
-const localAboutList = ref([...aboutList])
+const localSettingsList = ref([
+  { id: 1, icon: '👤', title: '个人信息', path: '/pages/settings/profile', switch: false },
+  { id: 2, icon: '🔔', title: '消息通知', path: '', switch: true, switchValue: true },
+  { id: 3, icon: '🔒', title: '隐私设置', path: '/pages/settings/privacy', switch: false },
+  { id: 4, icon: '🌙', title: '深色模式', path: '', switch: true, switchValue: false },
+  { id: 5, icon: '🗣', title: '语言', value: '简体中文', path: '/pages/settings/language', switch: false },
+])
+const localAboutList = ref([
+  { id: 1, icon: '📖', title: '使用帮助', path: '' },
+  { id: 2, icon: '📋', title: '用户协议', path: '' },
+  { id: 3, icon: '🔐', title: '隐私政策', path: '' },
+  { id: 4, icon: 'ℹ️', title: '关于我们', path: '' },
+])
+
+const userInfo = ref({
+  id: 1,
+  avatar: '',
+  nickname: '',
+  phone: '',
+  email: ''
+})
+
+onMounted(async () => {
+  try {
+    const data: any = await userApi.getInfo(1)
+    userInfo.value = data
+  } catch (error) {
+    console.error('Failed to load user info:', error)
+  }
+})
 
 const goToEdit = () => {
   uni.navigateTo({
