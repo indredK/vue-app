@@ -4,6 +4,7 @@ import uni from '@dcloudio/vite-plugin-uni'
 global.uniPlugin = { options: {} }
 
 export default defineConfig({
+  base: './',
   plugins: [uni()],
   server: {
     proxy: {
