@@ -157,8 +157,9 @@ const getValueLevel = (score: number) => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 40rpx 32rpx 24rpx;
+  padding: 40rpx 32rpx 32rpx;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  overflow: visible;
   
   .header-content {
     .title {
@@ -217,7 +218,8 @@ const getValueLevel = (score: number) => {
 
 .search-bar {
   padding: 0 32rpx;
-  margin-top: -30rpx;
+  position: relative;
+  z-index: 10;
   
   .search-input {
     display: flex;
