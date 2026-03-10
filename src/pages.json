@@ -3,19 +3,25 @@
     {
       "path": "pages/goods/index",
       "style": {
-        "navigationBarTitleText": "商品列表"
+        "navigationBarTitleText": "商品列表",
+        "enablePullDownRefresh": true,
+        "backgroundTextStyle": "dark"
       }
     },
     {
       "path": "pages/goods/detail",
       "style": {
-        "navigationBarTitleText": "商品详情"
+        "navigationBarTitleText": "商品详情",
+        "enablePullDownRefresh": true,
+        "backgroundTextStyle": "dark"
       }
     },
     {
       "path": "pages/cart/index",
       "style": {
-        "navigationBarTitleText": "购物车"
+        "navigationBarTitleText": "购物车",
+        "enablePullDownRefresh": true,
+        "backgroundTextStyle": "dark"
       }
     },
     {
@@ -27,7 +33,9 @@
     {
       "path": "pages/compare/index",
       "style": {
-        "navigationBarTitleText": "产品对比"
+        "navigationBarTitleText": "产品对比",
+        "enablePullDownRefresh": true,
+        "backgroundTextStyle": "dark"
       }
     }
   ],

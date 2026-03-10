@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { onPullDownRefresh } from '@dcloudio/uni-app'
 import { goodsApi, cartApi } from '@/utils/api'
 import type { Goods } from '@/types'
 
@@ -9,7 +10,7 @@ const goodsList = ref<Goods[]>([])
 const compareList = ref<Goods[]>([])
 const loading = ref(true)
 
-onMounted(async () => {
+const loadGoods = async () => {
   try {
     const data: any = await goodsApi.getList()
     goodsList.value = data.map((item: any) => ({
@@ -23,6 +24,15 @@ onMounted(async () => {
   } finally {
     loading.value = false
   }
+}
+
+onMounted(async () => {
+  await loadGoods()
+})
+
+onPullDownRefresh(async () => {
+  await loadGoods()
+  uni.stopPullDownRefresh()
 })
 
 const showSelector = ref(false)
@@ -236,7 +246,7 @@ const getValueLevel = (score: number) => {
         <view class="table-row action-row">
           <view class="row-label">操作</view>
           <view v-for="item in compareList" :key="item.id" class="row-value">
-            <button class="cart-btn" @click="addToCart(item)">加入购物车</button>
+            <button class="cart-btn" @click="addToCart(item)">加入</button>
           </view>
         </view>
       </view>
@@ -248,7 +258,7 @@ const getValueLevel = (score: number) => {
           <text class="panel-title">选择商品</text>
           <text class="panel-close" @click="showSelector = false">✕</text>
         </view>
-        <scroll-view scroll-y class="goods-list">
+        <view class="goods-list">
           <view 
             v-for="goods in goodsList" 
             :key="goods.id" 
@@ -265,7 +275,7 @@ const getValueLevel = (score: number) => {
               <text v-if="isSelected(goods.id)">✓</text>
             </view>
           </view>
-        </scroll-view>
+        </view>
       </view>
     </view>
   </view>
@@ -664,7 +674,6 @@ const getValueLevel = (score: number) => {
     }
     
     .goods-list {
-      max-height: 60vh;
       padding: 24rpx;
       
       .goods-item {

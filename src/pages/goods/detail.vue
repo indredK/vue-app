@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { onLoad } from '@dcloudio/uni-app'
+import { onLoad, onPullDownRefresh } from '@dcloudio/uni-app'
 import { goodsApi, cartApi } from '@/utils/api'
 import type { Goods } from '@/types'
 
@@ -9,23 +9,34 @@ const currentImage = ref('')
 const quantity = ref(1)
 const currentUserId = 1
 
+const loadGoods = async (id: number) => {
+  try {
+    const data: any = await goodsApi.getById(id)
+    goods.value = {
+      ...data,
+      specs: typeof data.specs === 'string' ? JSON.parse(data.specs) : data.specs,
+      tags: typeof data.tags === 'string' ? JSON.parse(data.tags) : data.tags
+    }
+    if (goods.value) {
+      currentImage.value = goods.value.image
+    }
+  } catch (error) {
+    console.error('Failed to load goods:', error)
+    uni.showToast({ title: '加载失败', icon: 'none' })
+  }
+}
+
 onLoad(async (options: { id?: string }) => {
   if (options.id) {
-    try {
-      const data: any = await goodsApi.getById(Number(options.id))
-      goods.value = {
-        ...data,
-        specs: typeof data.specs === 'string' ? JSON.parse(data.specs) : data.specs,
-        tags: typeof data.tags === 'string' ? JSON.parse(data.tags) : data.tags
-      }
-      if (goods.value) {
-        currentImage.value = goods.value.image
-      }
-    } catch (error) {
-      console.error('Failed to load goods:', error)
-      uni.showToast({ title: '加载失败', icon: 'none' })
-    }
+    await loadGoods(Number(options.id))
   }
+})
+
+onPullDownRefresh(async () => {
+  if (goods.value) {
+    await loadGoods(goods.value.id)
+  }
+  uni.stopPullDownRefresh()
 })
 
 const decrease = () => {
@@ -64,12 +75,6 @@ const buyNow = () => {
   })
 }
 
-const goToCompare = () => {
-  uni.navigateTo({
-    url: '/pages/compare/index'
-  })
-}
-
 const goBack = () => {
   uni.navigateBack()
 }
@@ -83,7 +88,7 @@ const goToCart = () => {
 
 <template>
   <view class="page" v-if="goods">
-    <scroll-view scroll-y class="content">
+    <view class="content">
       <view class="image-section">
         <image :src="currentImage" mode="aspectFill" class="main-image" />
         <view class="image-count">
@@ -142,7 +147,7 @@ const goToCart = () => {
       <view class="sales-section">
         <text class="sales-text">已有 {{ goods.sales }} 人付款</text>
       </view>
-    </scroll-view>
+    </view>
 
     <view class="bottom-bar">
       <view class="action-icons">
@@ -150,13 +155,9 @@ const goToCart = () => {
           <text class="icon">🛒</text>
           <text class="icon-text">购物车</text>
         </view>
-        <view class="icon-item" @click="goToCompare">
-          <text class="icon">⚖️</text>
-          <text class="icon-text">对比</text>
-        </view>
       </view>
       <view class="action-buttons">
-        <view class="add-cart-btn" @click="addToCart">加入购物车</view>
+        <view class="add-cart-btn" @click="addToCart">加入</view>
         <view class="buy-btn" @click="buyNow">立即购买</view>
       </view>
     </view>
@@ -168,10 +169,6 @@ const goToCart = () => {
   min-height: 100vh;
   background: #f5f5f5;
   padding-bottom: 100rpx;
-}
-
-.content {
-  height: 100vh;
 }
 
 .image-section {

@@ -1,4 +1,4 @@
-const BASE_URL = '/api';
+const BASE_URL = 'http://localhost:3000/api';
 
 const request = (url: string, options: any = {}) => {
   return new Promise((resolve, reject) => {

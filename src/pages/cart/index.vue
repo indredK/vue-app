@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { onPullDownRefresh, onShow } from '@dcloudio/uni-app'
 import { cartApi, orderApi } from '@/utils/api'
 import type { CartItem } from '@/types'
 
@@ -9,7 +10,7 @@ const cartData = ref<CartItem[]>([])
 const loading = ref(true)
 const currentUserId = 1
 
-onMounted(async () => {
+const loadCart = async () => {
   try {
     const data: any = await cartApi.getList(currentUserId)
     cartData.value = data.map((item: any) => ({
@@ -22,7 +23,20 @@ onMounted(async () => {
   } finally {
     loading.value = false
   }
+}
+
+onMounted(async () => {
+  await loadCart()
 })
+
+onShow(async () => {
+  await loadCart()
+})
+
+const onPullDownRefresh = async () => {
+  await loadCart()
+  uni.stopPullDownRefresh()
+}
 
 const selectAll = computed(() => {
   return cartData.value.length > 0 && cartData.value.every(item => item.selected)
@@ -230,15 +244,14 @@ const goToGoods = () => {
 
 <style lang="scss" scoped>
 .page {
-  min-height: 100vh;
   background: #f5f5f5;
   padding-bottom: 120rpx;
   display: flex;
   flex-direction: column;
-  padding-bottom: calc(120rpx + env(safe-area-inset-bottom));
 }
 
 .empty-cart {
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
