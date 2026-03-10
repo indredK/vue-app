@@ -1,0 +1,15 @@
+{
+  "name": "shop-mini-app",
+  "appid": "__UNI__A1B2C3D",
+  "description": "商城小程序",
+  "versionName": "1.0.0",
+  "versionCode": "100",
+  "transformPx": false,
+  "h5": {
+    "title": "商城小程序",
+    "router": {
+      "mode": "hash",
+      "base": "/"
+    }
+  }
+}
