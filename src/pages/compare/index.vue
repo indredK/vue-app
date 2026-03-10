@@ -92,10 +92,6 @@ const addToCart = (goods: Goods) => {
   uni.showToast({ title: '已加入购物车', icon: 'success' })
 }
 
-const goBack = () => {
-  uni.navigateBack()
-}
-
 const getCellClass = (item: Goods, paramKey: string) => {
   if (paramKey === 'price' && getBestPrice.value && item.id === getBestPrice.value.id) {
     return 'best-price'
@@ -116,14 +112,6 @@ const getValueLevel = (score: number) => {
 
 <template>
   <view class="page">
-    <view class="header">
-      <text class="back-btn" @click="goBack">‹</text>
-      <view class="header-center">
-        <text class="title">产品对比</text>
-        <text class="subtitle">{{ compareList.length }} 个商品</text>
-      </view>
-    </view>
-    
     <view v-if="compareList.length === 0" class="empty-state">
       <view class="empty-illustration">
         <text class="empty-icon">⚖️</text>
@@ -271,38 +259,7 @@ const getValueLevel = (score: number) => {
 .page {
   min-height: 100vh;
   background: linear-gradient(180deg, #f8f9fa 0%, #e9ecef 100%);
-}
-
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 40rpx 32rpx 24rpx;
-  background: linear-gradient(135deg, #ee0979 0%, #ff6a00 100%);
-  
-  .back-btn {
-    font-size: 56rpx;
-    color: #fff;
-    font-weight: 300;
-  }
-  
-  .header-center {
-    text-align: center;
-    
-    .title {
-      display: block;
-      font-size: 36rpx;
-      font-weight: bold;
-      color: #fff;
-    }
-    
-    .subtitle {
-      display: block;
-      font-size: 24rpx;
-      color: rgba(255, 255, 255, 0.8);
-      margin-top: 4rpx;
-    }
-  }
+  padding-top: 20rpx;
 }
 
 .empty-state {

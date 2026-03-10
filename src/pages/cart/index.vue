@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { getCartItems, cartList, type CartItem } from '@/mock'
+import { getCartItems, type CartItem } from '@/mock'
+
+declare const uni: any
 
 const cartData = ref<CartItem[]>(getCartItems())
 
@@ -42,7 +44,7 @@ const removeItem = (id: number) => {
   uni.showModal({
     title: '提示',
     content: '确定要删除该商品吗？',
-    success: (res) => {
+    success: (res: any) => {
       if (res.confirm) {
         const index = cartData.value.findIndex(item => item.id === id)
         if (index > -1) {
@@ -67,7 +69,7 @@ const clearCart = () => {
   uni.showModal({
     title: '提示',
     content: '确定要清空购物车吗？',
-    success: (res) => {
+    success: (res: any) => {
       if (res.confirm) {
         cartData.value = []
         uni.showToast({ title: '已清空', icon: 'success' })
@@ -75,18 +77,14 @@ const clearCart = () => {
     }
   })
 }
+
+const goToGoods = () => {
+  uni.switchTab({ url: '/pages/goods/index' })
+}
 </script>
 
 <template>
   <view class="page">
-    <view class="header">
-      <view class="header-left">
-        <text class="title">购物车</text>
-        <text class="subtitle">共 {{ cartData.length }} 件商品</text>
-      </view>
-      <text v-if="cartData.length > 0" class="edit-btn" @click="clearCart">清空</text>
-    </view>
-    
     <view v-if="cartData.length === 0" class="empty-cart">
       <view class="empty-illustration">
         <text class="cart-emoji">🛒</text>
@@ -94,7 +92,7 @@ const clearCart = () => {
       </view>
       <text class="empty-title">购物车空空如也</text>
       <text class="empty-desc">快去挑选心仪的商品吧</text>
-      <button class="go-shopping" @click="uni.switchTab({ url: '/pages/goods/index' })">
+      <button class="go-shopping" @click="goToGoods">
         去逛逛
       </button>
     </view>
@@ -107,7 +105,7 @@ const clearCart = () => {
           class="cart-item"
           :class="{ 'unselected': !item.selected }"
         >
-          <view class="checkbox" @click="toggleSelect(item)">
+          <view class="checkbox" :class="{ checked: item.selected }" @click="toggleSelect(item)">
             <text v-if="item.selected" class="check-icon">✓</text>
           </view>
           <view class="item-image-wrapper">
@@ -136,22 +134,22 @@ const clearCart = () => {
     </view>
     
     <view v-if="cartData.length > 0" class="footer">
-      <view class="select-all" @click="toggleSelectAll">
-        <view class="checkbox" :class="{ checked: selectAll }">
-          <text v-if="selectAll" class="check-icon">✓</text>
-        </view>
-        <text class="all-text">全选</text>
-      </view>
-      <view class="total-section">
-        <view class="total-info">
-          <text class="total-label">合计</text>
-          <view class="total-price-wrap">
-            <text class="total-price">¥{{ totalPrice }}</text>
+      <view class="footer-left">
+        <view class="select-all" @click="toggleSelectAll">
+          <view class="checkbox" :class="{ checked: selectAll }">
+            <text v-if="selectAll" class="check-icon">✓</text>
           </view>
+          <text class="all-text">全选</text>
+        </view>
+        <view class="clear-btn" @click="clearCart">清空</view>
+      </view>
+      <view class="footer-right">
+        <view class="total-section">
+          <text class="total-label">合计：</text>
+          <text class="total-price">¥{{ totalPrice }}</text>
         </view>
         <view class="checkout-btn" :class="{ disabled: selectedCount === 0 }" @click="goToCheckout">
-          <text class="checkout-text">结算</text>
-          <text v-if="selectedCount > 0" class="checkout-count">({{ selectedCount }})</text>
+          购买{{ selectedCount > 0 ? `(${selectedCount})` : '' }}
         </view>
       </view>
     </view>
@@ -161,40 +159,11 @@ const clearCart = () => {
 <style lang="scss" scoped>
 .page {
   min-height: 100vh;
-  background: linear-gradient(180deg, #f8f9fa 0%, #e9ecef 100%);
-  padding-bottom: 140rpx;
-}
-
-.header {
+  background: #f5f5f5;
+  padding-bottom: 120rpx;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 40rpx 32rpx 24rpx;
-  background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
-  
-  .header-left {
-    .title {
-      display: block;
-      font-size: 44rpx;
-      font-weight: bold;
-      color: #fff;
-    }
-    
-    .subtitle {
-      display: block;
-      font-size: 24rpx;
-      color: rgba(255, 255, 255, 0.8);
-      margin-top: 8rpx;
-    }
-  }
-  
-  .edit-btn {
-    color: rgba(255, 255, 255, 0.9);
-    font-size: 28rpx;
-    background: rgba(255, 255, 255, 0.2);
-    padding: 12rpx 24rpx;
-    border-radius: 30rpx;
-  }
+  flex-direction: column;
+  padding-bottom: calc(120rpx + env(safe-area-inset-bottom));
 }
 
 .empty-cart {
@@ -251,7 +220,9 @@ const clearCart = () => {
 }
 
 .cart-content {
+  flex: 1;
   padding: 24rpx;
+  padding-bottom: 120rpx;
 }
 
 .cart-list {
@@ -393,99 +364,93 @@ const clearCart = () => {
 
 .footer {
   position: fixed;
-  bottom: 0;
+  bottom: calc(50px + env(safe-area-inset-bottom));
   left: 0;
   right: 0;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  height: 120rpx;
+  height: 100rpx;
   background: #fff;
-  padding: 0 32rpx;
-  box-shadow: 0 -8rpx 32rpx rgba(0, 0, 0, 0.06);
+  padding: 0 24rpx;
+  box-shadow: 0 -2rpx 10rpx rgba(0, 0, 0, 0.05);
   z-index: 100;
+  
+  .footer-left {
+    display: flex;
+    align-items: center;
+    gap: 24rpx;
+  }
   
   .select-all {
     display: flex;
     align-items: center;
     
     .checkbox {
-      width: 48rpx;
-      height: 48rpx;
-      border: 3rpx solid #dee2e6;
+      width: 44rpx;
+      height: 44rpx;
+      border: 2rpx solid #ddd;
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      margin-right: 12rpx;
-      transition: all 0.3s ease;
+      margin-right: 8rpx;
       
       &.checked {
-        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
-        border-color: transparent;
+        background: #ff4d4f;
+        border-color: #ff4d4f;
       }
       
       .check-icon {
         color: #fff;
-        font-size: 28rpx;
+        font-size: 24rpx;
         font-weight: bold;
       }
     }
     
     .all-text {
-      font-size: 28rpx;
-      color: #495057;
+      font-size: 26rpx;
+      color: #333;
     }
   }
   
-  .total-section {
+  .clear-btn {
+    font-size: 26rpx;
+    color: #666;
+  }
+  
+  .footer-right {
     display: flex;
     align-items: center;
-    
-    .total-info {
-      margin-right: 32rpx;
-      text-align: right;
-      
-      .total-label {
-        font-size: 24rpx;
-        color: #868e96;
-      }
-      
-      .total-price-wrap {
-        .total-price {
-          color: #ff4757;
-          font-size: 40rpx;
-          font-weight: 800;
-        }
-      }
+    gap: 20rpx;
+  }
+  
+  .total-section {
+    .total-label {
+      font-size: 24rpx;
+      color: #666;
     }
     
-    .checkout-btn {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 200rpx;
-      height: 80rpx;
-      background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
-      border-radius: 40rpx;
-      box-shadow: 0 8rpx 24rpx rgba(17, 153, 142, 0.3);
-      
-      .checkout-text {
-        color: #fff;
-        font-size: 30rpx;
-        font-weight: 600;
-      }
-      
-      .checkout-count {
-        color: rgba(255, 255, 255, 0.8);
-        font-size: 26rpx;
-        margin-left: 6rpx;
-      }
-      
-      &.disabled {
-        background: #dee2e6;
-        box-shadow: none;
-      }
+    .total-price {
+      color: #ff4d4f;
+      font-size: 36rpx;
+      font-weight: bold;
+    }
+  }
+  
+  .checkout-btn {
+    width: 180rpx;
+    height: 72rpx;
+    line-height: 72rpx;
+    background: #ff4d4f;
+    border-radius: 36rpx;
+    text-align: center;
+    color: #fff;
+    font-size: 28rpx;
+    font-weight: 500;
+    
+    &.disabled {
+      background: #ccc;
     }
   }
 }

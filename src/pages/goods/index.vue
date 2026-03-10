@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import { goodsList, type Goods } from '@/mock'
+
+declare const uni: any
 
 const cartCount = ref(0)
 const compareList = ref<Goods[]>([])
@@ -16,6 +18,12 @@ const goToCompare = () => {
   })
 }
 
+const goToCart = () => {
+  uni.switchTab({
+    url: '/pages/cart/index'
+  })
+}
+
 const goToDetail = (goods: Goods) => {
   uni.navigateTo({
     url: `/pages/goods/detail?id=${goods.id}`
@@ -27,6 +35,19 @@ const addToCart = (goods: Goods) => {
   uni.showToast({
     title: '已加入购物车',
     icon: 'success'
+  })
+}
+
+const handleAddAllToCart = () => {
+  uni.showToast({
+    title: '已加入购物车',
+    icon: 'success'
+  })
+}
+
+const handleBuyNow = () => {
+  uni.switchTab({
+    url: '/pages/cart/index'
   })
 }
 
@@ -75,23 +96,6 @@ const getValueLevel = (score: number) => {
 
 <template>
   <view class="page">
-    <view class="header">
-      <view class="header-content">
-        <text class="title">精选商品</text>
-        <text class="subtitle">发现好物</text>
-      </view>
-      <view class="header-right">
-        <view class="compare-btn" @click="goToCompare">
-          <text class="btn-icon">⚖️</text>
-          <text v-if="compareList.length > 0" class="compare-badge">{{ compareList.length }}</text>
-        </view>
-        <view class="cart-icon" @click="uni.switchTab({ url: '/pages/cart/index' })">
-          <text class="btn-icon">🛒</text>
-          <text v-if="cartCount > 0" class="cart-badge">{{ cartCount }}</text>
-        </view>
-      </view>
-    </view>
-    
     <view class="search-bar">
       <view class="search-input">
         <text class="search-icon">🔍</text>
@@ -150,6 +154,34 @@ const getValueLevel = (score: number) => {
         </view>
       </view>
     </view>
+    
+    <view class="floating-btns">
+      <view class="float-btn cart-btn" @click="goToCart">
+        <text class="float-icon">🛒</text>
+        <text v-if="cartCount > 0" class="float-badge">{{ cartCount }}</text>
+      </view>
+      <view class="float-btn compare-float-btn" @click="goToCompare">
+        <text class="float-icon">⚖️</text>
+        <text v-if="compareList.length > 0" class="float-badge">{{ compareList.length }}</text>
+      </view>
+    </view>
+
+    <view class="bottom-bar">
+      <view class="action-icons">
+        <view class="icon-item" @click="goToCart">
+          <text class="icon">🛒</text>
+          <text class="icon-text">购物车</text>
+        </view>
+        <view class="icon-item" @click="goToCompare">
+          <text class="icon">⚖️</text>
+          <text class="icon-text">对比</text>
+        </view>
+      </view>
+      <view class="action-buttons">
+        <view class="add-cart-btn" @click="handleAddAllToCart">加入购物车</view>
+        <view class="buy-btn" @click="handleBuyNow">立即购买</view>
+      </view>
+    </view>
   </view>
 </template>
 
@@ -157,69 +189,6 @@ const getValueLevel = (score: number) => {
 .page {
   min-height: 100vh;
   background: linear-gradient(180deg, #f8f9fa 0%, #e9ecef 100%);
-}
-
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 40rpx 32rpx 32rpx;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  overflow: visible;
-  
-  .header-content {
-    .title {
-      display: block;
-      font-size: 44rpx;
-      font-weight: bold;
-      color: #fff;
-    }
-    
-    .subtitle {
-      display: block;
-      font-size: 26rpx;
-      color: rgba(255, 255, 255, 0.8);
-      margin-top: 8rpx;
-    }
-  }
-  
-  .header-right {
-    display: flex;
-    align-items: center;
-    gap: 16rpx;
-  }
-  
-  .compare-btn, .cart-icon {
-    position: relative;
-    width: 72rpx;
-    height: 72rpx;
-    background: rgba(255, 255, 255, 0.2);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    backdrop-filter: blur(10px);
-    
-    .btn-icon {
-      font-size: 32rpx;
-    }
-    
-    .compare-badge, .cart-badge {
-      position: absolute;
-      top: -4rpx;
-      right: -4rpx;
-      background: #ff4757;
-      color: #fff;
-      font-size: 20rpx;
-      font-weight: bold;
-      min-width: 32rpx;
-      height: 32rpx;
-      line-height: 32rpx;
-      text-align: center;
-      border-radius: 16rpx;
-      padding: 0 8rpx;
-    }
-  }
 }
 
 .search-bar {
@@ -490,4 +459,110 @@ const getValueLevel = (score: number) => {
     }
   }
 }
+
+.floating-btns {
+  position: fixed;
+  right: 24rpx;
+  bottom: 200rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+  z-index: 100;
+  
+  .float-btn {
+    width: 96rpx;
+    height: 96rpx;
+    background: #fff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.15);
+    position: relative;
+    
+    .float-icon {
+      font-size: 44rpx;
+    }
+    
+    .float-badge {
+      position: absolute;
+      top: -8rpx;
+      right: -8rpx;
+      background: #ff4757;
+      color: #fff;
+      font-size: 22rpx;
+      font-weight: bold;
+      min-width: 36rpx;
+      height: 36rpx;
+      line-height: 36rpx;
+      text-align: center;
+      border-radius: 18rpx;
+      padding: 0 8rpx;
+    }
+  }
+}
+
+.bottom-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 100rpx;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  padding: 0 24rpx;
+  box-shadow: 0 -2rpx 10rpx rgba(0, 0, 0, 0.05);
+  z-index: 100;
+  
+  .action-icons {
+    display: flex;
+    gap: 40rpx;
+    margin-right: 24rpx;
+    
+    .icon-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      font-size: 20rpx;
+      color: #666;
+      
+      .icon {
+        font-size: 36rpx;
+      }
+      
+      .icon-text {
+        margin-top: 4rpx;
+      }
+    }
+  }
+  
+  .action-buttons {
+    flex: 1;
+    display: flex;
+    height: 72rpx;
+    border-radius: 36rpx;
+    overflow: hidden;
+    
+    .add-cart-btn, .buy-btn {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28rpx;
+      font-weight: 500;
+    }
+    
+    .add-cart-btn {
+      background: linear-gradient(135deg, #ff9800 0%, #ff6b00 100%);
+      color: #fff;
+    }
+    
+    .buy-btn {
+      background: linear-gradient(135deg, #ff4d4f 0%, #f00 100%);
+      color: #fff;
+    }
+  }
+}
 </style>
+
