@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import { ref, onLoad } from 'vue'
-import { goodsList, getGoodsById, type Goods } from '@/mock'
+import { ref } from 'vue'
+import { onLoad } from '@dcloudio/uni-app'
+import { getGoodsById, type Goods } from '@/mock'
 
 const goods = ref<Goods | null>(null)
 const currentImage = ref('')
 const quantity = ref(1)
-const showActionSheet = ref(false)
 
-onLoad((options: any) => {
+onLoad((options: { id?: string }) => {
   if (options.id) {
     const data = getGoodsById(Number(options.id))
     if (data) {

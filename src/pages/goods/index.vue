@@ -114,27 +114,26 @@ const getValueLevel = (score: number) => {
         v-for="item in goodsList" 
         :key="item.id" 
         class="goods-item"
-        @click="goToDetail(item)"
       >
         <view class="compare-checkbox" @click.stop="toggleCompare(item)">
           <text v-if="isInCompare(item)" class="check-icon">✓</text>
         </view>
-        <view class="image-wrapper">
+        <view class="image-wrapper" @click="goToDetail(item)">
           <image :src="item.image" mode="aspectFill" class="goods-image" />
           <view class="tags">
             <text v-for="tag in item.tags" :key="tag" class="tag">{{ tag }}</text>
           </view>
         </view>
         <view class="goods-info">
-          <text class="goods-name">{{ item.name }}</text>
-          <text class="goods-desc">{{ item.description }}</text>
-          <view class="goods-bottom">
+          <text class="goods-name" @click="goToDetail(item)">{{ item.name }}</text>
+          <text class="goods-desc" @click="goToDetail(item)">{{ item.description }}</text>
+          <view class="goods-bottom" @click="goToDetail(item)">
             <view class="price-wrapper">
               <text class="goods-price">¥{{ item.price }}</text>
             </view>
             <text class="goods-sales">{{ item.sales }}人付款</text>
           </view>
-          <view class="value-row">
+          <view class="value-row" @click="goToDetail(item)">
             <view class="value-badge" :class="'level-' + getValueLevel(Number(getValueScore(item)))">
               <text class="value-label">性价比</text>
               <text class="value-score">{{ getValueScore(item) }}分</text>
