@@ -16,6 +16,12 @@ const goToCompare = () => {
   })
 }
 
+const goToDetail = (goods: Goods) => {
+  uni.navigateTo({
+    url: `/pages/goods/detail?id=${goods.id}`
+  })
+}
+
 const addToCart = (goods: Goods) => {
   cartCount.value++
   uni.showToast({
@@ -108,8 +114,9 @@ const getValueLevel = (score: number) => {
         v-for="item in goodsList" 
         :key="item.id" 
         class="goods-item"
+        @click="goToDetail(item)"
       >
-        <view class="compare-checkbox" @click="toggleCompare(item)">
+        <view class="compare-checkbox" @click.stop="toggleCompare(item)">
           <text v-if="isInCompare(item)" class="check-icon">✓</text>
         </view>
         <view class="image-wrapper">
