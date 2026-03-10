@@ -148,20 +148,20 @@
       {
         "pagePath": "pages/goods/index",
         "text": "商品",
-        "iconPath": "static/tabbar/goods.svg",
-        "selectedIconPath": "static/tabbar/goods-active.svg"
+        "iconPath": "/vue-app/static/tabbar/goods.svg",
+        "selectedIconPath": "/vue-app/static/tabbar/goods-active.svg"
       },
       {
         "pagePath": "pages/cart/index",
         "text": "购物车",
-        "iconPath": "static/tabbar/cart.svg",
-        "selectedIconPath": "static/tabbar/cart-active.svg"
+        "iconPath": "/vue-app/static/tabbar/cart.svg",
+        "selectedIconPath": "/vue-app/static/tabbar/cart-active.svg"
       },
       {
         "pagePath": "pages/settings/index",
         "text": "我的",
-        "iconPath": "static/tabbar/user.svg",
-        "selectedIconPath": "static/tabbar/user-active.svg"
+        "iconPath": "/vue-app/static/tabbar/user.svg",
+        "selectedIconPath": "/vue-app/static/tabbar/user-active.svg"
       }
     ]
   }
