@@ -137,10 +137,6 @@ const getValueLevel = (score: number) => {
     </view>
     
     <view v-else class="compare-content">
-      <view class="selector-bar" @click="showSelector = true">
-        <text class="selector-text">+ 添加商品对比 ({{ compareList.length }}/4)</text>
-      </view>
-      
       <view class="analysis-card">
         <view class="analysis-header">
           <text class="analysis-icon">📊</text>
