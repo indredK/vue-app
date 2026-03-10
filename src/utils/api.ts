@@ -6,7 +6,7 @@ const request = (url: string, options: any = {}) => {
       url: `${BASE_URL}${url}`,
       ...options,
       success: (res: any) => {
-        if (res.statusCode === 200) {
+        if (res.statusCode === 200 || res.statusCode === 201) {
           resolve(res.data);
         } else {
           reject(res);
