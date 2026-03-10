@@ -8,11 +8,15 @@ declare const uni: any
 
 const cartData = ref<CartItem[]>([])
 const loading = ref(true)
-const currentUserId = 1
+const currentUserId = ref(1)
 
 const loadCart = async () => {
   try {
-    const data: any = await cartApi.getList(currentUserId)
+    const user = uni.getStorageSync('user')
+    if (user) {
+      currentUserId.value = user.id
+    }
+    const data: any = await cartApi.getList(currentUserId.value)
     cartData.value = data.map((item: any) => ({
       ...item,
       selected: item.selected ?? true
@@ -125,7 +129,7 @@ const goToCheckout = async () => {
   }
   try {
     await orderApi.create({
-      userId: currentUserId,
+      userId: currentUserId.value,
       items: selectedItems.map((item: CartItem) => ({
         goodsId: item.goodsId,
         name: item.name,
@@ -136,7 +140,7 @@ const goToCheckout = async () => {
       totalAmount: totalPrice.value
     })
     uni.showToast({ title: '购买成功', icon: 'success' })
-    const data: any = await cartApi.getList(currentUserId)
+    const data: any = await cartApi.getList(currentUserId.value)
     cartData.value = data.map((item: any) => ({
       ...item,
       selected: item.selected ?? true
@@ -153,7 +157,7 @@ const clearCart = () => {
     success: async (res: any) => {
       if (res.confirm) {
         try {
-          await cartApi.clear(currentUserId)
+          await cartApi.clear(currentUserId.value)
           cartData.value = []
           uni.showToast({ title: '已清空', icon: 'success' })
         } catch (error) {
@@ -178,7 +182,7 @@ const goToGoods = () => {
       </view>
       <text class="empty-title">购物车空空如也</text>
       <text class="empty-desc">快去挑选心仪的商品吧</text>
-      <button class="go-shopping" @click="goToGoods">
+      <button class="go-shopping" @tap="goToGoods">
         去逛逛
       </button>
     </view>
@@ -191,7 +195,7 @@ const goToGoods = () => {
           class="cart-item"
           :class="{ 'unselected': !item.selected }"
         >
-          <view class="checkbox" :class="{ checked: item.selected }" @click="toggleSelect(item)">
+          <view class="checkbox" :class="{ checked: item.selected }" @tap="toggleSelect(item)">
             <text v-if="item.selected" class="check-icon">✓</text>
           </view>
           <view class="item-image-wrapper">
@@ -202,17 +206,17 @@ const goToGoods = () => {
             <view class="item-bottom">
               <text class="item-price">¥{{ item.price }}</text>
               <view class="quantity-control">
-                <view class="qty-btn" @click="decrease(item)">
+                <view class="qty-btn" @tap="decrease(item)">
                   <text class="qty-icon">−</text>
                 </view>
                 <text class="qty-num">{{ item.quantity }}</text>
-                <view class="qty-btn" @click="increase(item)">
+                <view class="qty-btn" @tap="increase(item)">
                   <text class="qty-icon">+</text>
                 </view>
               </view>
             </view>
           </view>
-          <view class="delete-btn" @click="removeItem(item.id)">
+          <view class="delete-btn" @tap="removeItem(item.id)">
             <text class="delete-icon">🗑️</text>
           </view>
         </view>
@@ -221,20 +225,20 @@ const goToGoods = () => {
     
     <view v-if="cartData.length > 0" class="footer">
       <view class="footer-left">
-        <view class="select-all" @click="toggleSelectAll">
+        <view class="select-all" @tap="toggleSelectAll">
           <view class="checkbox" :class="{ checked: selectAll }">
             <text v-if="selectAll" class="check-icon">✓</text>
           </view>
           <text class="all-text">全选</text>
         </view>
-        <view class="clear-btn" @click="clearCart">清空</view>
+        <view class="clear-btn" @tap="clearCart">清空</view>
       </view>
       <view class="footer-right">
         <view class="total-section">
           <text class="total-label">合计：</text>
           <text class="total-price">¥{{ totalPrice }}</text>
         </view>
-        <view class="checkout-btn" :class="{ disabled: selectedCount === 0 }" @click="goToCheckout">
+        <view class="checkout-btn" :class="{ disabled: selectedCount === 0 }" @tap="goToCheckout">
           购买{{ selectedCount > 0 ? `(${selectedCount})` : '' }}
         </view>
       </view>

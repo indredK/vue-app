@@ -1,18 +1,69 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { goodsApi, cartApi } from '@/utils/api'
-import type { Goods } from '@/types'
+import { goodsApi, cartApi, categoryApi, favoriteApi } from '@/utils/api'
+import type { Goods, Category } from '@/types'
 
 declare const uni: any
 
 const goodsList = ref<Goods[]>([])
+const categories = ref<Category[]>([])
 const cartCount = ref(0)
 const loading = ref(true)
+const searchKeyword = ref('')
+const selectedCategoryId = ref<number | null>(null)
+const priceRange = ref({ min: '', max: '' })
+const sortBy = ref('default')
+const showFilter = ref(true)
+const showFilterModal = ref(false)
+
+const sortOptions = [
+  { key: 'default', label: '默认' },
+  { key: 'sales', label: '销量' },
+  { key: 'price_asc', label: '价格从低到高' },
+  { key: 'price_desc', label: '价格从高到低' }
+]
 
 const loadGoods = async () => {
   try {
-    const data: any = await goodsApi.getList()
-    goodsList.value = data.map((item: any) => ({
+    loading.value = true
+    const params: any = {
+      page: 1,
+      limit: 20
+    }
+    
+    if (searchKeyword.value) {
+      params.keyword = searchKeyword.value
+    }
+    
+    if (selectedCategoryId.value) {
+      params.categoryId = selectedCategoryId.value
+    }
+    
+    if (priceRange.value.min) {
+      params.minPrice = Number(priceRange.value.min)
+    }
+    
+    if (priceRange.value.max) {
+      params.maxPrice = Number(priceRange.value.max)
+    }
+    
+    if (sortBy.value !== 'default') {
+      if (sortBy.value === 'sales') {
+        params.sort = 'sales'
+        params.order = 'DESC'
+      } else if (sortBy.value === 'price_asc') {
+        params.sort = 'price'
+        params.order = 'ASC'
+      } else if (sortBy.value === 'price_desc') {
+        params.sort = 'price'
+        params.order = 'DESC'
+      }
+    }
+    
+    console.log('Loading goods with params:', params)
+    const data: any = await goodsApi.getList(params)
+    console.log('API response:', data)
+    goodsList.value = data.goods.map((item: any) => ({
       ...item,
       specs: typeof item.specs === 'string' ? JSON.parse(item.specs) : item.specs,
       tags: typeof item.tags === 'string' ? JSON.parse(item.tags) : item.tags
@@ -25,13 +76,46 @@ const loadGoods = async () => {
   }
 }
 
+const loadCategories = async () => {
+  try {
+    const data: any = await categoryApi.getTree()
+    categories.value = data || []
+  } catch (error) {
+    console.error('Failed to load categories:', error)
+    categories.value = []
+  }
+}
+
 onMounted(async () => {
+  await loadCategories()
   await loadGoods()
 })
 
 const onPullDownRefresh = async () => {
   await loadGoods()
   uni.stopPullDownRefresh()
+}
+
+const handleSearch = () => {
+  loadGoods()
+}
+
+const handleFilter = () => {
+  loadGoods()
+  showFilterModal.value = false
+}
+
+const handleSort = (option: any) => {
+  sortBy.value = option.key
+  loadGoods()
+}
+
+const resetFilter = () => {
+  searchKeyword.value = ''
+  selectedCategoryId.value = null
+  priceRange.value = { min: '', max: '' }
+  sortBy.value = 'default'
+  loadGoods()
 }
 
 const handleBuyNow = () => {
@@ -72,11 +156,30 @@ const addToCart = async (goods: Goods) => {
   }
 }
 
-const handleAddAllToCart = () => {
-  uni.showToast({
-    title: '已加入购物车',
-    icon: 'success'
-  })
+const toggleFavorite = async (goods: Goods) => {
+  try {
+    const user = uni.getStorageSync('user')
+    if (!user) {
+      uni.showToast({ title: '请先登录', icon: 'none' })
+      return
+    }
+    
+    const checkResult: any = await favoriteApi.check(user.id, goods.id)
+    if (checkResult.isFavorite) {
+      await favoriteApi.cancel(user.id, goods.id)
+      uni.showToast({ title: '已取消收藏', icon: 'success' })
+    } else {
+      await favoriteApi.add({ userId: user.id, goodsId: goods.id })
+      uni.showToast({ title: '已收藏', icon: 'success' })
+    }
+  } catch (error) {
+    uni.showToast({ title: '操作失败', icon: 'none' })
+  }
+}
+
+const selectCategory = (categoryId: number | null) => {
+  selectedCategoryId.value = categoryId
+  loadGoods()
 }
 </script>
 
@@ -85,29 +188,75 @@ const handleAddAllToCart = () => {
     <view class="search-bar">
       <view class="search-input">
         <text class="search-icon">🔍</text>
-        <text class="search-placeholder">搜索商品...</text>
+        <input 
+          v-model="searchKeyword" 
+          class="search-field" 
+          placeholder="搜索商品..." 
+          @confirm="handleSearch"
+        />
+      </view>
+      <view class="filter-btn" @tap="showFilter = !showFilter">
+        <text class="filter-icon">⚙️</text>
+      </view>
+    </view>
+
+    <view class="category-bar" v-if="showFilter">
+      <scroll-view scroll-x class="category-scroll">
+        <view class="category-list">
+          <view 
+            class="category-item"
+            :class="{ active: selectedCategoryId === null }"
+            @tap="selectCategory(null)"
+          >
+            <text class="category-text">全部</text>
+          </view>
+          <view 
+            v-for="category in categories" 
+            :key="category.id" 
+            class="category-item"
+            :class="{ active: selectedCategoryId === category.id }"
+            @tap="selectCategory(category.id)"
+          >
+            <text class="category-text">{{ category.name }}</text>
+          </view>
+        </view>
+      </scroll-view>
+    </view>
+
+    <view class="sort-bar" v-if="showFilter">
+      <view 
+        v-for="option in sortOptions" 
+        :key="option.key" 
+        class="sort-item"
+        :class="{ active: sortBy === option.key }"
+        @tap="handleSort(option)"
+      >
+        <text class="sort-text">{{ option.label }}</text>
       </view>
     </view>
     
     <view class="goods-grid">
         <view v-for="item in goodsList" :key="item.id" class="goods-item">
-          <view class="image-wrapper" @click="goToDetail(item)">
+          <view class="image-wrapper" @tap="goToDetail(item)">
             <image :src="item.image" mode="aspectFill" class="goods-image" />
             <view class="tags">
               <text v-for="tag in item.tags" :key="tag" class="tag">{{ tag }}</text>
             </view>
           </view>
           <view class="goods-info">
-            <text class="goods-name" @click="goToDetail(item)">{{ item.name }}</text>
-            <text class="goods-desc" @click="goToDetail(item)">{{ item.description }}</text>
-            <view class="goods-bottom" @click="goToDetail(item)">
+            <text class="goods-name" @tap="goToDetail(item)">{{ item.name }}</text>
+            <text class="goods-desc" @tap="goToDetail(item)">{{ item.description }}</text>
+            <view class="goods-bottom" @tap="goToDetail(item)">
               <view class="price-wrapper">
                 <text class="goods-price">¥{{ item.price }}</text>
               </view>
               <text class="goods-sales">{{ item.sales }}人付款</text>
             </view>
             <view class="goods-actions">
-              <button class="add-btn" @click="addToCart(item)">
+              <button class="fav-btn" @tap="toggleFavorite(item)">
+                <text class="btn-text">❤️</text>
+              </button>
+              <button class="add-btn" @tap="addToCart(item)">
                 <text class="btn-text">+ 加入</text>
               </button>
             </view>
@@ -116,24 +265,13 @@ const handleAddAllToCart = () => {
       </view>
     
     <view class="floating-btns">
-      <view class="float-btn cart-btn" @click="goToCart">
+      <view class="float-btn cart-btn" @tap="goToCart">
         <text class="float-icon">🛒</text>
         <text v-if="cartCount > 0" class="float-badge">{{ cartCount }}</text>
       </view>
     </view>
 
-    <view class="bottom-bar">
-      <view class="action-icons">
-        <view class="icon-item" @click="goToCart">
-          <text class="icon">🛒</text>
-          <text class="icon-text">购物车</text>
-        </view>
-      </view>
-      <view class="action-buttons">
-        <view class="add-cart-btn" @click="handleAddAllToCart">加入</view>
-        <view class="buy-btn" @click="handleBuyNow">立即购买</view>
-      </view>
-    </view>
+
   </view>
 </template>
 
@@ -152,8 +290,12 @@ const handleAddAllToCart = () => {
   background: linear-gradient(180deg, #f8f9fa 0%, #e9ecef 100%);
   padding: 24rpx 32rpx 16rpx;
   box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.05);
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
   
   .search-input {
+    flex: 1;
     display: flex;
     align-items: center;
     background: #fff;
@@ -166,9 +308,91 @@ const handleAddAllToCart = () => {
       margin-right: 16rpx;
     }
     
-    .search-placeholder {
-      color: #adb5bd;
+    .search-field {
+      flex: 1;
       font-size: 28rpx;
+      color: #212529;
+    }
+  }
+  
+  .filter-btn {
+    width: 72rpx;
+    height: 72rpx;
+    background: #fff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.08);
+    
+    .filter-icon {
+      font-size: 32rpx;
+    }
+  }
+}
+
+.category-bar {
+  background: #fff;
+  padding: 16rpx 0;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
+  
+  .category-scroll {
+    white-space: nowrap;
+  }
+  
+  .category-list {
+    display: inline-flex;
+    padding: 0 24rpx;
+    gap: 24rpx;
+    
+    .category-item {
+      padding: 12rpx 24rpx;
+      border-radius: 24rpx;
+      background: #f5f5f5;
+      transition: all 0.3s ease;
+      
+      &.active {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: #fff;
+      }
+      
+      .category-text {
+        font-size: 26rpx;
+        color: #666;
+        
+        .active & {
+          color: #fff;
+        }
+      }
+    }
+  }
+}
+
+.sort-bar {
+  background: #fff;
+  padding: 16rpx 24rpx;
+  display: flex;
+  gap: 16rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
+  
+  .sort-item {
+    padding: 8rpx 20rpx;
+    border-radius: 20rpx;
+    background: #f5f5f5;
+    transition: all 0.3s ease;
+    
+    &.active {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #fff;
+    }
+    
+    .sort-text {
+      font-size: 24rpx;
+      color: #666;
+      
+      .active & {
+        color: #fff;
+      }
     }
   }
 }
@@ -313,6 +537,30 @@ const handleAddAllToCart = () => {
   gap: 12rpx;
   margin-top: 16rpx;
   
+  .fav-btn {
+    flex: 1;
+    height: 56rpx;
+    line-height: 56rpx;
+    font-size: 22rpx;
+    border-radius: 28rpx;
+    border: none;
+    font-weight: 500;
+    background: #f5f5f5;
+    color: #666;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    
+    .btn-text {
+      font-size: 26rpx;
+    }
+    
+    &:active {
+      opacity: 0.9;
+      transform: scale(0.98);
+    }
+  }
+  
   .add-btn {
     flex: 1;
     height: 56rpx;
@@ -339,8 +587,103 @@ const handleAddAllToCart = () => {
       transform: scale(0.98);
     }
   }
-}
   }
+}
+
+.filter-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: flex-end;
+  z-index: 1000;
+  
+  .filter-panel {
+    width: 100%;
+    background: #fff;
+    border-radius: 32rpx 32rpx 0 0;
+    padding: 32rpx;
+    
+    .filter-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 32rpx;
+      
+      .filter-title {
+        font-size: 32rpx;
+        font-weight: 600;
+      }
+      
+      .filter-close {
+        font-size: 36rpx;
+        color: #999;
+        padding: 10rpx;
+      }
+    }
+    
+    .filter-section {
+      margin-bottom: 32rpx;
+      
+      .filter-label {
+        font-size: 28rpx;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 16rpx;
+      }
+      
+      .price-inputs {
+        display: flex;
+        align-items: center;
+        gap: 16rpx;
+        
+        .price-input {
+          flex: 1;
+          height: 80rpx;
+          line-height: 80rpx;
+          background: #f8f9fa;
+          border-radius: 12rpx;
+          padding: 0 24rpx;
+          font-size: 28rpx;
+          color: #333;
+        }
+        
+        .price-separator {
+          font-size: 28rpx;
+          color: #999;
+        }
+      }
+    }
+    
+    .filter-actions {
+      display: flex;
+      gap: 16rpx;
+      
+      .reset-btn, .confirm-btn {
+        flex: 1;
+        height: 88rpx;
+        line-height: 88rpx;
+        font-size: 30rpx;
+        font-weight: 600;
+        border-radius: 44rpx;
+        border: none;
+      }
+      
+      .reset-btn {
+        background: #f5f5f5;
+        color: #666;
+      }
+      
+      .confirm-btn {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: #fff;
+      }
+    }
+  }
+}
 }
 
 .floating-btns {
@@ -381,69 +724,6 @@ const handleAddAllToCart = () => {
       text-align: center;
       border-radius: 18rpx;
       padding: 0 8rpx;
-    }
-  }
-}
-
-.bottom-bar {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 100rpx;
-  background: #fff;
-  display: flex;
-  align-items: center;
-  padding: 0 24rpx;
-  box-shadow: 0 -2rpx 10rpx rgba(0, 0, 0, 0.05);
-  z-index: 100;
-  
-  .action-icons {
-    display: flex;
-    gap: 40rpx;
-    margin-right: 24rpx;
-    
-    .icon-item {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      font-size: 20rpx;
-      color: #666;
-      
-      .icon {
-        font-size: 36rpx;
-      }
-      
-      .icon-text {
-        margin-top: 4rpx;
-      }
-    }
-  }
-  
-  .action-buttons {
-    flex: 1;
-    display: flex;
-    height: 72rpx;
-    border-radius: 36rpx;
-    overflow: hidden;
-    
-    .add-cart-btn, .buy-btn {
-      flex: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 28rpx;
-      font-weight: 500;
-    }
-    
-    .add-cart-btn {
-      background: linear-gradient(135deg, #ff9800 0%, #ff6b00 100%);
-      color: #fff;
-    }
-    
-    .buy-btn {
-      background: linear-gradient(135deg, #ff4d4f 0%, #f00 100%);
-      color: #fff;
     }
   }
 }

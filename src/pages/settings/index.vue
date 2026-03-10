@@ -62,10 +62,17 @@ const logout = () => {
     content: '确定要退出登录吗？',
     success: (res) => {
       if (res.confirm) {
+        uni.removeStorageSync('token')
+        uni.removeStorageSync('user')
         uni.showToast({
           title: '已退出登录',
           icon: 'success'
         })
+        setTimeout(() => {
+          uni.reLaunch({
+            url: '/pages/auth/login'
+          })
+        }, 1500)
       }
     }
   })
