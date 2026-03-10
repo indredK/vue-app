@@ -1,6 +1,6 @@
 const getBaseUrl = () => {
   if (import.meta.env.PROD) {
-    return 'https://your-backend-api.com/api'
+    return 'https://vue-app-backend-1olu.onrender.com/api'
   }
   return 'http://localhost:3001/api'
 }
